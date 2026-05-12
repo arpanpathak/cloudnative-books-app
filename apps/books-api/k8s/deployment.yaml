@@ -21,6 +21,15 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
+        env:
+        - name: REDIS_ADDRS
+          # The internal DNS name we created in 02-services.yaml!
+          value: "redis-cluster.redis.svc.cluster.local:6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
         # Resources MUST be defined for HPA to work!
         resources:
           requests:

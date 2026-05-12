@@ -8,8 +8,12 @@ kubectl create namespace redis --dry-run=client -o yaml | kubectl apply -f -
 if ! kubectl get secret redis-auth -n redis >/dev/null 2>&1; then
     read -s -p "Enter a secure password for the Redis Cluster: " REDIS_PASSWORD
     echo ""
-    # Creates the secret securely inside K8s directly from memory
+    # Creates the secret securely inside K8s directly from memory (for Redis)
     kubectl create secret generic redis-auth -n redis --from-literal=password="$REDIS_PASSWORD"
+    
+    # We also need the exact same secret in the default namespace so our Go API can read it!
+    kubectl create secret generic redis-auth --from-literal=password="$REDIS_PASSWORD"
+    
     echo "✅ Secret created securely inside Kubernetes!"
 else
     echo "✅ Secret 'redis-auth' already exists in the cluster."
