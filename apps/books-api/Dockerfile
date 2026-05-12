@@ -1,12 +1,14 @@
 # 1. Build Stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
 # Copy modules
-COPY go.mod ./
+COPY go.mod go.sum ./
+RUN go mod download
+
 # Copy source
-COPY main.go ./
+COPY . .
 
 # Compile a static Go binary (CGO_ENABLED=0 ensures it runs anywhere)
 RUN CGO_ENABLED=0 GOOS=linux go build -o books-api main.go
