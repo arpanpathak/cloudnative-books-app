@@ -1,0 +1,71 @@
+# ==============================================================================
+# REDIS CLUSTER HEADLESS SERVICE (Internal Pod-to-Pod Communication)
+# ==============================================================================
+# Why "Headless"? (clusterIP: None)
+# Normal K8s Services act as LoadBalancers that randomly route traffic to any pod.
+# In a Redis Cluster, pods MUST be able to talk directly to specific pods 
+# (e.g., redis-cluster-0 must talk to redis-cluster-5) to synchronize data.
+# A Headless service bypasses K8s load balancing and creates stable DNS records 
+# for EACH pod individually (e.g., redis-cluster-0.redis-cluster-headless.redis.svc.cluster.local).
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-headless
+  namespace: redis
+spec:
+  # The magic line that makes it Headless. K8s will NOT assign an internal IP to the service itself.
+  clusterIP: None
+  ports:
+    # --------------------------------------------------------------------------
+    # CLIENT PORT CONFIGURATION
+    # --------------------------------------------------------------------------
+    # 'port': This is the port that the Service itself exposes to the cluster.
+    - port: 6379
+      # 'targetPort': This is the physical port that the Redis Container is actually listening on inside the Pod.
+      targetPort: 6379
+      # 'name': Naming the port 'client' allows other K8s objects (like NetworkPolicies) to reference it by name instead of remembering '6379'.
+      name: client
+
+    # --------------------------------------------------------------------------
+    # GOSSIP PROTOCOL PORT CONFIGURATION
+    # --------------------------------------------------------------------------
+    # 'port': The Service port for internal cluster chatter.
+    - port: 16379
+      # 'targetPort': Redis always uses (client port + 10000) for its internal cluster bus.
+      # This is the "Gossip Protocol" port. Redis nodes use this exclusively to secretly 
+      # talk to each other, elect masters, detect failures, and pass state changes.
+      targetPort: 16379
+      # 'name': Named 'gossip' to clearly distinguish it from client traffic.
+      name: gossip
+  
+  # 'selector': This tells the Service which Pods to attach to. Any Pod with 'app: redis-cluster' gets added to this service.
+  selector:
+    app: redis-cluster
+
+---
+
+# ==============================================================================
+# REDIS CLUSTER CLIENT SERVICE (Normal Service)
+# ==============================================================================
+# This is a standard Kubernetes service. 
+# Your Go REST API uses this to discover the Redis cluster.
+# When your Go app connects to 'redis-cluster.redis.svc.cluster.local:6379',
+# Kubernetes acts as a load balancer and routes the connection to a random Redis node.
+# The Redis client library in your Go app will then ask that node for the cluster topology
+# and automatically figure out where the rest of the data lives.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+  namespace: redis
+spec:
+  ports:
+    # 'port': The internal cluster port your Go app connects to.
+    - port: 6379
+      # 'targetPort': The port the Redis container is actually listening on.
+      targetPort: 6379
+      # 'name': Standard naming convention for clarity.
+      name: client
+  # 'selector': Maps this service to our Redis StatefulSet pods.
+  selector:
+    app: redis-cluster

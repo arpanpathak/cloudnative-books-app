@@ -8,6 +8,5 @@ terraform {
 }
 
 provider "vultr" {
-  # The API Key is automatically picked up from the VULTR_API_KEY environment variable.
-  # Security Best Practice: Never hardcode your API key in Terraform files.
+  api_key = var.vultr_api_key
 }

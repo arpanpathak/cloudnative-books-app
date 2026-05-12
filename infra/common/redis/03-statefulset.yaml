@@ -1,0 +1,115 @@
+# ==============================================================================
+# REDIS CLUSTER STATEFULSET
+# ==============================================================================
+# Why a StatefulSet instead of a Deployment?
+# Deployments treat all pods as identical, disposable clones (like web servers).
+# Databases are NOT identical. They need stable network identities (redis-cluster-0, redis-cluster-1)
+# and stable storage. If redis-cluster-0 dies, K8s MUST bring it back named exactly redis-cluster-0,
+# and re-attach its exact hard drive so the cluster doesn't lose its memory.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: redis
+spec:
+  # 'serviceName': Links this StatefulSet to the Headless Service we created in 02-services.yaml.
+  # This guarantees that K8s will register DNS records for every single pod.
+  serviceName: redis-cluster-headless
+  
+  # 'replicas': A true sharded Redis cluster requires at least 3 masters.
+  # With 1 replica (backup) per master, we need 6 pods in total.
+  replicas: 6
+  
+  # 'selector': Tells K8s which pods belong to this StatefulSet.
+  selector:
+    matchLabels:
+      app: redis-cluster
+  
+  template:
+    metadata:
+      # These labels are what the Services use to find these Pods.
+      labels:
+        app: redis-cluster
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        
+        # 'command': Overrides the default Docker entrypoint to run our specific setup.
+        command: ["redis-server"]
+        # 'args': The exact arguments passed to 'redis-server'.
+        args: 
+          # 1. Point to the custom config file we mounted from the ConfigMap.
+          - "/conf/redis.conf"
+          # 2. '--requirepass': Enforces that clients (like your Go app) MUST provide a password to read/write.
+          - "--requirepass"
+          - "$(REDIS_PASSWORD)"
+          # 3. '--masterauth': Enforces that Replica nodes MUST provide this password when syncing data from the Master nodes.
+          - "--masterauth"
+          - "$(REDIS_PASSWORD)"
+          
+        # ----------------------------------------------------------------------
+        # SECURITY SECRETS (Environment Variables)
+        # ----------------------------------------------------------------------
+        # We inject the REDIS_PASSWORD environment variable dynamically.
+        # It reads from the 'redis-auth' Kubernetes Secret created by deploy.sh.
+        # This keeps the raw password completely out of the Git repository.
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+              
+        # ----------------------------------------------------------------------
+        # PORTS EXPOSED BY THE CONTAINER
+        # ----------------------------------------------------------------------
+        ports:
+        # 'containerPort: 6379': The physical port opened inside the Docker container for standard database queries.
+        - containerPort: 6379
+          name: client
+        # 'containerPort: 16379': The physical port opened inside the Docker container for the Gossip protocol (cluster bus).
+        - containerPort: 16379
+          name: gossip
+          
+        # ----------------------------------------------------------------------
+        # MOUNTING DRIVES INTO THE CONTAINER
+        # ----------------------------------------------------------------------
+        volumeMounts:
+        # Mounts the 'conf' volume (which comes from our ConfigMap) into the /conf folder inside the pod.
+        - name: conf
+          mountPath: /conf
+          readOnly: false
+        # Mounts the 'data' volume (which comes from our Persistent Volume Claim) into the /data folder.
+        - name: data
+          mountPath: /data
+          readOnly: false
+          
+      # ------------------------------------------------------------------------
+      # DEFINING THE VOLUMES
+      # ------------------------------------------------------------------------
+      volumes:
+      # This creates a logical volume named 'conf' by pulling the data from our 'redis-cluster-config' ConfigMap.
+      - name: conf
+        configMap:
+          name: redis-cluster-config
+          # Sets file permissions to be readable and executable.
+          defaultMode: 0755
+          
+  # ----------------------------------------------------------------------------
+  # PERSISTENT STORAGE (VolumeClaimTemplates)
+  # ----------------------------------------------------------------------------
+  # This section asks the Cloud Provider (Linode/Vultr/Azure) to automatically 
+  # provision a physical block storage drive (like a 1GB SSD) for EVERY pod created.
+  # Because it's a StatefulSet, redis-cluster-0 gets an SSD named 'data-redis-cluster-0'.
+  # If redis-cluster-0 crashes, K8s will ensure that exact SSD is reattached when it reboots.
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      # 'ReadWriteOnce': Only one pod can read/write to this specific SSD at a time.
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          # Ask the cloud provider for a 1 Gigabyte drive.
+          storage: 1Gi

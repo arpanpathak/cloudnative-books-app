@@ -3,15 +3,8 @@ set -e
 
 echo "=== Vultr Kubernetes Deployment ==="
 
-# 1. Ensure API Key is provided
-if [ -z "$VULTR_API_KEY" ]; then
-    echo "🚨 VULTR_API_KEY environment variable is not set!"
-    echo "Go to https://my.vultr.com/settings/#settingsapi to generate an API key."
-    echo "IMPORTANT: Make sure to 'Allow All IPv4' or whitelist your specific IP on Vultr's API page!"
-    read -p "Enter your Vultr API Key: " VULTR_API_KEY
-    export VULTR_API_KEY
-fi
-
+# 1. Ensure API Key is provided via terraform.tfvars
+echo "Looking for API Key in terraform.tfvars..."
 # 2. Initialize Terraform
 echo "📦 Initializing Terraform..."
 terraform init

@@ -27,3 +27,9 @@ variable "plan" {
   type        = string
   default     = "vc2-2c-4gb" 
 }
+
+variable "vultr_api_key" {
+  description = "The Vultr API Key"
+  type        = string
+  sensitive   = true
+}

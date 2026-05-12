@@ -1,0 +1,46 @@
+# ==============================================================================
+# REDIS CLUSTER CONFIGURATION (ConfigMap)
+# ==============================================================================
+# This ConfigMap stores the raw redis.conf file that will be mounted into 
+# every Redis pod. This is how we configure Redis to run in "Cluster Mode" 
+# rather than "Standalone Mode".
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-config
+  namespace: redis
+data:
+  # This block becomes a physical file at `/conf/redis.conf` inside the pod.
+  redis.conf: |
+    # --------------------------------------------------------------------------
+    # CLUSTER SETTINGS
+    # --------------------------------------------------------------------------
+    # 'cluster-enabled yes' tells the Redis instance to act as a cluster node 
+    # and open the cluster bus port (16379) to talk to other nodes.
+    cluster-enabled yes
+
+    # 'cluster-require-full-coverage no' is crucial for high availability!
+    # By default, if a single shard (master + its replica) dies, the ENTIRE 
+    # cluster stops accepting writes. Setting this to 'no' allows surviving 
+    # shards to keep working even if a subset of the cluster goes down.
+    cluster-require-full-coverage no
+
+    # How long a node must be unreachable before the cluster considers it dead 
+    # and promotes a replica to take its place (15000ms = 15 seconds).
+    cluster-node-timeout 15000
+
+    # The file where Redis saves its internal cluster state (e.g., who is master, 
+    # who holds which hash slots). This must persist across reboots.
+    cluster-config-file /data/nodes.conf
+
+    # --------------------------------------------------------------------------
+    # PERSISTENCE & SECURITY
+    # --------------------------------------------------------------------------
+    # Append-Only File (AOF): Logs every write operation immediately to disk, 
+    # preventing data loss if a pod crashes suddenly.
+    appendonly yes
+
+    # Disables protected mode since we rely on Kubernetes network policies 
+    # and password authentication for security, not local bindings.
+    protected-mode no
