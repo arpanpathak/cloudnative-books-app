@@ -32,6 +32,14 @@ docker tag arpanpathak/books-api:latest arpanpathak/books-api:v2
 docker push arpanpathak/books-api:v2
 ```
 
+### ⚠️ The "Latest" Tag Gotcha
+Pushing a new Docker image to Docker Hub does **NOT** automatically update your running Kubernetes pods. Because the tag is still `latest`, Kubernetes assumes it already has the correct image locally and will not actively poll Docker Hub for changes.
+
+To force Kubernetes to pull the new image and update your pods without downtime, you must manually trigger a rolling restart:
+```bash
+kubectl rollout restart deployment books-api
+```
+
 ---
 
 ## 2. Kubernetes Deployment

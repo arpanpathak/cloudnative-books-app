@@ -29,6 +29,7 @@ The vision is to be **cloud native from day 1**. Future plans include decoupling
 - **Firewalls & NetworkPolicies**
 - **Service Mesh & eBPF**
 - **Custom Kubernetes Operators (Go)**: Replacing bash-based Redis initialization with a native Go Operator to automatically handle shard formulation, leader elections, and zero-downtime failovers natively inside the cluster.
+- **Full CI/CD with ArgoCD (GitOps)**: Automating the deployment lifecycle so that any code merged to `main` triggers an image build, and ArgoCD automatically syncs and updates the Kubernetes pods without manual `kubectl rollout` commands.
 
 ## 🧠 Honest Distributed Systems Engineering
 Distributed Systems are full of trade-offs. As a Senior Engineer, your responsibility goes beyond just coding, especially if you join startups with budget constraints. Big tech companies have unlimited money, but small and mid-size tech companies need to be frugal, and the scale is massive as well. 
