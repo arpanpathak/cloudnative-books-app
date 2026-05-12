@@ -1,0 +1,29 @@
+variable "region" {
+  description = "The Vultr region to deploy the cluster in (e.g., ewr, sjc, blr)"
+  type        = string
+  default     = "ewr" # New Jersey / NY region. Change to 'blr' for Bangalore.
+}
+
+variable "cluster_name" {
+  description = "Name of the Vultr Kubernetes cluster"
+  type        = string
+  default     = "kubegoat-vultr"
+}
+
+variable "k8s_version" {
+  description = "The Kubernetes version to install"
+  type        = string
+  default     = "v1.29.2+1" 
+}
+
+variable "node_count" {
+  description = "Number of worker nodes"
+  type        = number
+  default     = 2
+}
+
+variable "plan" {
+  description = "The Vultr instance plan (vc2-2c-4gb = 2vCPU / 4GB RAM)"
+  type        = string
+  default     = "vc2-2c-4gb" 
+}
