@@ -13,19 +13,19 @@ variable "cluster_name" {
 variable "k8s_version" {
   description = "The Kubernetes version to install"
   type        = string
-  default     = "v1.29.2+1" 
+  default     = "v1.35.2+1" 
 }
 
 variable "node_count" {
   description = "Number of worker nodes"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "plan" {
-  description = "The Vultr instance plan (vc2-2c-4gb = 2vCPU / 4GB RAM)"
+  description = "The Vultr instance plan (vc2-4c-8gb = 4vCPU / 8GB RAM)"
   type        = string
-  default     = "vc2-2c-4gb" 
+  default     = "vc2-4c-8gb" 
 }
 
 variable "vultr_api_key" {

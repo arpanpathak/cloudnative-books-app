@@ -13,9 +13,16 @@ terraform init
 echo "🚀 Deploying Vultr Kubernetes Engine (VKE)..."
 terraform apply -auto-approve
 
-# 4. Success message
+# 4. Merge kubeconfig automatically
+echo "🔗 Merging Vultr cluster into ~/.kube/config..."
+export KUBECONFIG=~/.kube/config:$(pwd)/kubeconfig.yaml
+kubectl config view --flatten > ~/.kube/merged_config
+mv ~/.kube/merged_config ~/.kube/config
+unset KUBECONFIG
+chmod 600 ~/.kube/config
+
 echo ""
-echo "✅ Deployment complete!"
-echo "To connect to your new Vultr cluster, run:"
-echo "export KUBECONFIG=\$(pwd)/kubeconfig.yaml"
-echo "kubectl get nodes"
+echo "✅ Deployment complete! Your ~/.kube/config is updated."
+echo "To switch to your new Vultr cluster context, run:"
+echo "kubectl config get-contexts"
+echo "kubectl config use-context <vultr-context-name>"
