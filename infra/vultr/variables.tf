@@ -1,7 +1,7 @@
 variable "region" {
-  description = "The Vultr region to deploy the cluster in (e.g., ewr, sjc, blr)"
+  description = "The Vultr region to deploy the cluster in (e.g., ewr, sjc, sea, blr)"
   type        = string
-  default     = "ewr" # New Jersey / NY region. Change to 'blr' for Bangalore.
+  default     = "sea" # Seattle region for low latency.
 }
 
 variable "cluster_name" {
